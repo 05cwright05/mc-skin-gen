@@ -10,6 +10,7 @@ import {
   Title,
 } from "@mantine/core";
 import classes from "./Details.module.css";
+import steve_img from "../assets/steve.png";
 
 export function Details() {
   return (
@@ -17,13 +18,14 @@ export function Details() {
       <div className={classes.inner}>
         <div className={classes.content}>
           <Title className={classes.title}>
-            Create a <span className={classes.highlight}>personalized</span>{" "}
-            <br /> Minecraft skin
+            Create <span className={classes.highlight}>your</span> <br />{" "}
+            Minecraft skin
           </Title>
           <Text c="dimmed" mt="md">
-            Build fully functional accessible web applications faster than ever
-            – Mantine includes more than 120 customizable components and hooks
-            to cover you in any situation
+            Transform your profile picture into a custom Minecraft
+            skin—instantly and effortlessly! Upload a photo of yourself, and our
+            tool will generate a unique Minecraft skin that captures your look
+            in blocky, pixel-perfect style.{" "}
           </Text>
 
           <List
@@ -37,34 +39,19 @@ export function Details() {
             }
           >
             <List.Item>
-              <b>TypeScript based</b> – build type safe applications, all
-              components and hooks export types
+              <b>Privacy First</b> – your image is not sent to any third party
+              services
             </List.Item>
             <List.Item>
-              <b>Free and open source</b> – all packages have MIT license, you
-              can use Mantine in any project
+              <b>Free to use</b> – Generate your first minecraft avatar for free
             </List.Item>
             <List.Item>
-              <b>No annoying focus ring</b> – focus ring will appear only when
-              user navigates with keyboard
+              <b>Instant Download</b> – Get your Minecraft skin in seconds,
+              ready to upload and play
             </List.Item>
           </List>
-
-          <Group mt={30}>
-            <Button radius="xl" size="md" className={classes.control}>
-              Get started
-            </Button>
-            <Button
-              variant="default"
-              radius="xl"
-              size="md"
-              className={classes.control}
-            >
-              Source code
-            </Button>
-          </Group>
         </div>
-        <Image src={"../assets/react.svg"} className={classes.image} />
+        <Image src={steve_img} className={classes.image} />
       </div>
     </Container>
   );

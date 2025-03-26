@@ -3,15 +3,14 @@ import {
   IconBrandTwitter,
   IconBrandYoutube,
 } from "@tabler/icons-react";
-import { ActionIcon, Container, Group } from "@mantine/core";
-import { MantineLogo } from "@mantinex/mantine-logo";
+import { ActionIcon, Container, Group, Title } from "@mantine/core";
 import classes from "./Footer.module.css";
 
 export function Footer() {
   return (
     <div className={classes.footer}>
       <Container className={classes.inner}>
-        <MantineLogo size={28} />
+        <Title className={classes.title}>CubeMe</Title>
         <Group
           gap={0}
           className={classes.links}
