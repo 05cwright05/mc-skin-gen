@@ -1,7 +1,18 @@
-import React from "react";
+import "@mantine/core/styles.css";
 
-const App = () => {
-  return <div>App</div>;
-};
+import { MantineProvider } from "@mantine/core";
+import { Footer } from "./components/Footer";
+import { Details } from "./components/Details";
 
-export default App;
+export default function App() {
+  return (
+    <MantineProvider>
+      {
+        <>
+          <Details></Details>
+          <Footer></Footer>
+        </>
+      }
+    </MantineProvider>
+  );
+}
