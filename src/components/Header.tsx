@@ -3,6 +3,7 @@ import { Burger, Container, Group, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import classes from "./Header.module.css";
 import { User } from "firebase/auth";
+import { ProfileButton } from "./ProfileButton";
 
 const links = [
   { link: "about", label: "About" },
@@ -13,9 +14,11 @@ const links = [
 interface Props {
   onSelect: (location: string) => void;
   user: User | null;
+  signOut: () => Promise<void>;
+  signIn: () => Promise<void>;
 }
 
-export function Header({ onSelect, user }: Props) {
+export function Header({ onSelect, user, signOut, signIn }: Props) {
   const [opened, { toggle }] = useDisclosure(false);
   const [active, setActive] = useState(links[0].link);
 
@@ -43,7 +46,11 @@ export function Header({ onSelect, user }: Props) {
           <Group gap={5} visibleFrom="xs">
             {items}
           </Group>
-          {user && <p>{user.displayName}</p>}
+          <ProfileButton
+            user={user}
+            signOut={signOut}
+            signIn={signIn}
+          ></ProfileButton>
         </Group>
         <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm" />
       </Container>

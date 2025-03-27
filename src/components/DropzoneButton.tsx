@@ -3,8 +3,13 @@ import { IconCloudUpload, IconDownload, IconX } from "@tabler/icons-react";
 import { Button, Group, Text, useMantineTheme } from "@mantine/core";
 import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
 import classes from "./DropzoneButton.module.css";
+import { User } from "firebase/auth";
 
-export function DropzoneButton() {
+interface Props {
+  signIn: () => Promise<void>;
+  user: User | null;
+}
+export function DropzoneButton({ signIn, user }: Props) {
   const theme = useMantineTheme();
   const openRef = useRef<() => void>(null);
 
@@ -13,7 +18,10 @@ export function DropzoneButton() {
       <Dropzone
         openRef={openRef}
         onDrop={() => {
-          console.log("file selected");
+          if (!user) {
+            signIn();
+          }
+          console.log("now i show the info collection section");
         }}
         className={classes.dropzone}
         radius="md"
@@ -55,7 +63,7 @@ export function DropzoneButton() {
         radius="xl"
         onClick={() => openRef.current?.()}
       >
-        Select files
+        Select Files
       </Button>
     </div>
   );

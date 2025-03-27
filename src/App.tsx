@@ -16,6 +16,7 @@ import { auth, googleProvider } from "../firebase-config.ts";
 import { db } from "../firebase-config.ts";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
+import { ProvideDetails } from "./components/ProvideDetails.tsx";
 
 const theme = createTheme({
   colors: {
@@ -108,7 +109,12 @@ export default function App() {
     <MantineProvider theme={theme} defaultColorScheme="dark">
       {
         <>
-          <Header onSelect={handleScroll} user={user}></Header>
+          <Header
+            onSelect={handleScroll}
+            user={user}
+            signOut={handleLogout}
+            signIn={handleSignIn}
+          ></Header>
           <div id="about">
             <Details
               signIn={handleSignIn}
@@ -117,10 +123,11 @@ export default function App() {
             ></Details>
           </div>
           <div id="create">
-            <DropzoneButton></DropzoneButton>
+            <DropzoneButton signIn={handleSignIn} user={user}></DropzoneButton>
           </div>
           <div id="pricing"> </div>
           <DescribeSkin></DescribeSkin>
+          <ProvideDetails></ProvideDetails>
           <Footer></Footer>
         </>
       }

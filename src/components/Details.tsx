@@ -1,4 +1,4 @@
-import { IconCheck } from "@tabler/icons-react";
+import { IconBrandGoogle, IconCheck, IconSparkles } from "@tabler/icons-react";
 import {
   Container,
   Image,
@@ -61,7 +61,21 @@ export function Details({ signIn, user, scrollDown }: Props) {
               radius="xl"
               size="md"
               className={classes.control}
-              onClick={() => (user ? scrollDown("create") : signIn)}
+              onClick={() => {
+                if (user) {
+                  scrollDown("create");
+                } else {
+                  signIn(); // Ensure signIn is actually called
+                }
+              }}
+              rightSection={
+                user ? (
+                  <IconSparkles size={20} />
+                ) : (
+                  <IconBrandGoogle size={20} />
+                )
+              }
+              leftSection={user ? <IconSparkles size={20} /> : null}
             >
               {user ? "Create" : "Sign in with Google"}
             </Button>
