@@ -49,6 +49,10 @@ const theme = createTheme({
   },
 });
 export default function App() {
+  const [modalOpened, setModalOpened] = useState(false);
+
+  const openModal = () => setModalOpened(true);
+  const closeModal = () => setModalOpened(false);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -123,11 +127,18 @@ export default function App() {
             ></Details>
           </div>
           <div id="create">
-            <DropzoneButton signIn={handleSignIn} user={user}></DropzoneButton>
+            <DropzoneButton
+              signIn={handleSignIn}
+              user={user}
+              openModal={setModalOpened}
+            ></DropzoneButton>
           </div>
           <div id="pricing"> </div>
           <DescribeSkin></DescribeSkin>
-          <ProvideDetails></ProvideDetails>
+          <ProvideDetails
+            open={modalOpened}
+            setOpen={setModalOpened}
+          ></ProvideDetails>
           <Footer></Footer>
         </>
       }

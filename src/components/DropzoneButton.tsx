@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { IconCloudUpload, IconDownload, IconX } from "@tabler/icons-react";
 import { Button, Group, Text, useMantineTheme } from "@mantine/core";
 import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
@@ -8,8 +8,9 @@ import { User } from "firebase/auth";
 interface Props {
   signIn: () => Promise<void>;
   user: User | null;
+  openModal: (setter: boolean) => void;
 }
-export function DropzoneButton({ signIn, user }: Props) {
+export function DropzoneButton({ signIn, user, openModal }: Props) {
   const theme = useMantineTheme();
   const openRef = useRef<() => void>(null);
 
@@ -22,6 +23,7 @@ export function DropzoneButton({ signIn, user }: Props) {
             signIn();
           }
           console.log("now i show the info collection section");
+          openModal(true);
         }}
         className={classes.dropzone}
         radius="md"
