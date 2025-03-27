@@ -7,8 +7,8 @@ import { Header } from "./components/Header";
 import { DropzoneButton } from "./components/DropzoneButton";
 import { DescribeSkin } from "./components/DescribeSkin";
 import { signInWithPopup, signOut } from "firebase/auth";
-import { auth, googleProvider } from "../firebase-config.js";
-import { db } from "../firebase-config.js";
+import { auth, googleProvider } from "../firebase-config.ts";
+import { db } from "../firebase-config.ts";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const theme = createTheme({
