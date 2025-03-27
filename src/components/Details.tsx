@@ -1,18 +1,21 @@
 import { IconCheck } from "@tabler/icons-react";
 import {
-  Button,
   Container,
-  Group,
   Image,
   List,
   Text,
   ThemeIcon,
   Title,
+  Group,
+  Button,
 } from "@mantine/core";
 import classes from "./Details.module.css";
 import steve_img from "../assets/steve.png";
 
-export function Details() {
+interface Props {
+  signIn: () => void;
+}
+export function Details({ signIn }: Props) {
   return (
     <Container size="md">
       <div className={classes.inner}>
@@ -50,6 +53,16 @@ export function Details() {
               ready to upload and play
             </List.Item>
           </List>
+          <Group mt={30}>
+            <Button
+              radius="xl"
+              size="md"
+              className={classes.control}
+              onClick={signIn}
+            >
+              Sign in with Google
+            </Button>
+          </Group>
         </div>
         <Image src={steve_img} className={classes.image} />
       </div>

@@ -6,6 +6,10 @@ import { Details } from "./components/Details";
 import { Header } from "./components/Header";
 import { DropzoneButton } from "./components/DropzoneButton";
 import { DescribeSkin } from "./components/DescribeSkin";
+import { signInWithPopup, signOut } from "firebase/auth";
+import { auth, googleProvider } from "../firebase-config.js";
+import { db } from "../firebase-config.js";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const theme = createTheme({
   colors: {
@@ -47,13 +51,49 @@ export default function App() {
         ?.scrollIntoView({ behavior: "smooth" });
     }
   };
+
+  const handleSignIn = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Reference to user's Firestore document
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      // If the user does not exist, create a new document
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          email: user.email,
+          displayName: user.displayName,
+          proUser: false, // Default value
+          points: 0, // Default value
+          createdAt: new Date(),
+        });
+      }
+
+      console.log("User signed in:", user.displayName);
+    } catch (error) {
+      console.error("Error signing in:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  console.log(auth?.currentUser?.uid);
+
   return (
     <MantineProvider theme={theme} defaultColorScheme="dark">
       {
         <>
           <Header onSelect={handleScroll}></Header>
           <div id="about">
-            <Details></Details>
+            <Details signIn={handleSignIn}></Details>
           </div>
           <div id="create">
             <DropzoneButton></DropzoneButton>
