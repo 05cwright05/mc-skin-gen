@@ -6,10 +6,16 @@ import { Details } from "./components/Details";
 import { Header } from "./components/Header";
 import { DropzoneButton } from "./components/DropzoneButton";
 import { DescribeSkin } from "./components/DescribeSkin";
-import { signInWithPopup, signOut } from "firebase/auth";
+import {
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+  User,
+} from "firebase/auth";
 import { auth, googleProvider } from "../firebase-config.ts";
 import { db } from "../firebase-config.ts";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
 
 const theme = createTheme({
   colors: {
@@ -42,6 +48,17 @@ const theme = createTheme({
   },
 });
 export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Firebase listener for authentication state
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user); // Update state when user logs in or out
+    });
+
+    return () => unsubscribe(); // Cleanup on unmount
+  }, []);
+
   const handleScroll = (targetSection: string) => {
     if (targetSection === "about") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -91,9 +108,13 @@ export default function App() {
     <MantineProvider theme={theme} defaultColorScheme="dark">
       {
         <>
-          <Header onSelect={handleScroll}></Header>
+          <Header onSelect={handleScroll} user={user}></Header>
           <div id="about">
-            <Details signIn={handleSignIn}></Details>
+            <Details
+              signIn={handleSignIn}
+              user={user}
+              scrollDown={handleScroll}
+            ></Details>
           </div>
           <div id="create">
             <DropzoneButton></DropzoneButton>

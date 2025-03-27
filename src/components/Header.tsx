@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Burger, Container, Group, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import classes from "./Header.module.css";
+import { User } from "firebase/auth";
 
 const links = [
   { link: "about", label: "About" },
@@ -11,9 +12,10 @@ const links = [
 
 interface Props {
   onSelect: (location: string) => void;
+  user: User | null;
 }
 
-export function Header({ onSelect }: Props) {
+export function Header({ onSelect, user }: Props) {
   const [opened, { toggle }] = useDisclosure(false);
   const [active, setActive] = useState(links[0].link);
 
@@ -37,10 +39,12 @@ export function Header({ onSelect }: Props) {
     <header className={classes.header}>
       <Container size="md" className={classes.inner}>
         <Title className={classes.title}>CubeMe</Title>
-        <Group gap={5} visibleFrom="xs">
-          {items}
+        <Group>
+          <Group gap={5} visibleFrom="xs">
+            {items}
+          </Group>
+          {user && <p>{user.displayName}</p>}
         </Group>
-
         <Burger opened={opened} onClick={toggle} hiddenFrom="xs" size="sm" />
       </Container>
     </header>

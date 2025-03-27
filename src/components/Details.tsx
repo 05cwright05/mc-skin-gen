@@ -11,11 +11,14 @@ import {
 } from "@mantine/core";
 import classes from "./Details.module.css";
 import steve_img from "../assets/steve.png";
+import { User } from "firebase/auth";
 
 interface Props {
   signIn: () => void;
+  user: User | null;
+  scrollDown: (location: string) => void;
 }
-export function Details({ signIn }: Props) {
+export function Details({ signIn, user, scrollDown }: Props) {
   return (
     <Container size="md">
       <div className={classes.inner}>
@@ -58,9 +61,9 @@ export function Details({ signIn }: Props) {
               radius="xl"
               size="md"
               className={classes.control}
-              onClick={signIn}
+              onClick={() => (user ? scrollDown("create") : signIn)}
             >
-              Sign in with Google
+              {user ? "Create" : "Sign in with Google"}
             </Button>
           </Group>
         </div>
