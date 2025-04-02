@@ -3,6 +3,7 @@
     {
       "source": "functions",
       "codebase": "default",
+      "timeoutSeconds": 540,
       "ignore": [
         "node_modules",
         ".git",
@@ -14,6 +15,7 @@
     {
       "source": "ml_functions",
       "codebase": "ml",
+      "timeoutSeconds": 540,
       "ignore": [
         "node_modules",
         ".git",

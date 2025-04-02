@@ -1,3 +1,6 @@
 firebase-functions~=0.1.0
 firebase-admin
-Pillow  # Since your project seems to use PIL for image processing
+requests==2.32.3
+pillow==11.2.0
+huggingface-hub==0.30.1
+
