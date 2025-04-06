@@ -1,6 +1,6 @@
 import "@mantine/core/styles.css";
 
-import { Button, createTheme, MantineProvider } from "@mantine/core";
+import { createTheme, MantineProvider } from "@mantine/core";
 import { Footer } from "./components/Footer";
 import { Details } from "./components/Details";
 import { Header } from "./components/Header";
@@ -13,12 +13,8 @@ import {
   User,
 } from "firebase/auth";
 import { auth, googleProvider } from "../firebase-config.ts";
-import { db } from "../firebase-config.ts";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { ProvideDetails } from "./components/ProvideDetails.tsx";
-import { httpsCallable } from "firebase/functions";
-import { functions } from "../firebase-config.ts";
 
 const theme = createTheme({
   colors: {
@@ -53,8 +49,6 @@ const theme = createTheme({
 export default function App() {
   const [modalOpened, setModalOpened] = useState(false);
 
-  const openModal = () => setModalOpened(true);
-  const closeModal = () => setModalOpened(false);
   const [user, setUser] = useState<User | null>(null);
   const [file, setFile] = useState<File | null>(null); // State to store the dropped file
 
@@ -128,6 +122,7 @@ export default function App() {
             open={modalOpened}
             setOpen={setModalOpened}
             file={file}
+            setFile={setFile}
           ></ProvideDetails>
           <Footer></Footer>
         </>

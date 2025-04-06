@@ -1,12 +1,4 @@
-import {
-  Modal,
-  Button,
-  Group,
-  Text,
-  Center,
-  Loader,
-  Select,
-} from "@mantine/core";
+import { Modal, Button, Text, Center, Loader, Select } from "@mantine/core";
 import classes from "./ProvideDetails.module.css";
 import { FloatingLabelInput } from "./FloatingLabelInput";
 import { useState } from "react";

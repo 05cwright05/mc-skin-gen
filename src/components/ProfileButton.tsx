@@ -1,16 +1,5 @@
-import { Menu, Button, Text } from "@mantine/core";
-import {
-  IconSettings,
-  IconSearch,
-  IconPhoto,
-  IconMessageCircle,
-  IconTrash,
-  IconArrowsLeftRight,
-  IconLogout2,
-  IconUser,
-  IconLogin,
-  IconBrandGoogle,
-} from "@tabler/icons-react";
+import { Menu, Button } from "@mantine/core";
+import { IconLogout2, IconUser, IconBrandGoogle } from "@tabler/icons-react";
 import { User } from "firebase/auth";
 
 interface Props {

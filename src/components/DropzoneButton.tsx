@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { IconCloudUpload, IconDownload, IconX } from "@tabler/icons-react";
 import { Button, Group, Text, useMantineTheme } from "@mantine/core";
 import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
