@@ -243,6 +243,12 @@ def process_image_background(event: firestore_fn.Event[firestore_fn.DocumentSnap
             'completedAt': firestore.SERVER_TIMESTAMP,
             'result': output
         })
+        user_id = job.get('userId')
+        if user_id:
+            user_ref = db.collection('users').document(user_id)
+            user_ref.update({
+                'active_job_id': firestore.DELETE_FIELD
+            })
         
         # Remove from queue
         db.collection('image_processing_queue').document(job_id).delete()
@@ -268,15 +274,11 @@ def process_image_background(event: firestore_fn.Event[firestore_fn.DocumentSnap
         decrement_active_requests(token)
 
     
-@https_fn.on_call(secrets=[HF_TOKEN] )
+@https_fn.on_call()
 def upload_image(req: https_fn.CallableRequest) -> str:
-    token = HF_TOKEN.value
-    increment_active_requests()
-
     # Get user info from request
     user_id = req.data.get('userId')
     if not req.auth:
-        decrement_active_requests(token)
         return "unauthenticated"
 
     user_id = req.auth.uid
@@ -287,12 +289,26 @@ def upload_image(req: https_fn.CallableRequest) -> str:
     eye_color = detect_eyes(base64_img)
     shirt = req.data.get('shirt', None)
     pants = req.data.get('pants', None)
-
+    gender = req.data.get('gender', None)
     accesories = req.data.get('accesories', None)
-    if (accesories):
-        input_prompt =  f'A man with {eye_color} eyes wearing a {shirt} and {pants} and {accesories}'
+
+    if gender == 'Male':
+        if (accesories):
+            input_prompt =  f'A boy with {eye_color} eyes wearing a {shirt} and {pants} and {accesories}'
+        else:
+            input_prompt =  f'A boy with {eye_color} eyes wearing a {shirt} and {pants}'
+    elif gender == 'Female':
+        if (accesories):
+            input_prompt =  f'A girl with {eye_color} eyes wearing a {shirt} and {pants} and {accesories}'
+        else:
+            input_prompt =  f'A girl with {eye_color} eyes wearing a {shirt} and {pants}'
     else:
-        input_prompt =  f'A man with {eye_color} eyes wearing a {shirt} and {pants}'
+        if (accesories):
+            input_prompt =  f'A person with {eye_color} eyes wearing a {shirt} and {pants} and {accesories}'
+        else:
+            input_prompt =  f'A person with {eye_color} eyes wearing a {shirt} and {pants}'
+        
+
 
     # Fetch user details from Firestore
     user_ref = db.collection('users').document(user_id)
@@ -300,20 +316,30 @@ def upload_image(req: https_fn.CallableRequest) -> str:
     user_doc = user_ref.get()
     
     if not user_doc.exists:
-        decrement_active_requests(token)
         return "not found"
 
     user_data = user_doc.to_dict()
+
+     
+    # Check if user already has an active job
+    if user_data.get('active_job_id'):
+        # Check if the job is still processing
+        job_ref = db.collection('image_jobs').document(user_data['active_job_id'])
+        job_doc = job_ref.get()
+        
+        if job_doc.exists and job_doc.to_dict().get('status') == 'processing':
+            return "already processing"
+    
     display_name = user_data.get('displayName', 'Unknown User')
     email = user_data.get('email', 'No Email')
     num_tokens = user_data.get('tokens', 0)
 
     if (num_tokens == 0):
-        decrement_active_requests(token)
         return "token"
 
     # Create a job document in Firestore
     job_ref = db.collection('image_jobs').document()
+    job_id = job_ref.id
     job_ref.set({
         'userId': user_id,
         'displayName': display_name,
@@ -325,6 +351,14 @@ def upload_image(req: https_fn.CallableRequest) -> str:
         'completedAt': None,
         'result': None
     })
+    increment_active_requests()
+
+    #add the job to the user
+    user_ref.update({
+        'active_job_id': job_id,
+        'tokens': num_tokens - 1
+    })
+
 
     # Trigger the background process (separate function)
     db.collection('image_processing_queue').document(job_ref.id).set({
@@ -332,6 +366,7 @@ def upload_image(req: https_fn.CallableRequest) -> str:
         'createdAt': firestore.SERVER_TIMESTAMP
     })
 
+    
     return "success"
 
 

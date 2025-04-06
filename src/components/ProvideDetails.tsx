@@ -19,8 +19,9 @@ interface Props {
   open: boolean;
   setOpen: (setter: boolean) => void;
   file: File | null;
+  setFile: (file: File | null) => void;
 }
-export function ProvideDetails({ open, setOpen, file }: Props) {
+export function ProvideDetails({ open, setOpen, file, setFile }: Props) {
   // collect, Processing Information, Processing Complete
   const [currentContent, setCurrentContent] = useState(
     "Additional Information"
@@ -29,7 +30,9 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
   const [shirt, setShirt] = useState("");
   const [pants, setPants] = useState("");
   const [accessories, setAccessories] = useState("");
-  const isButtonEnabled = shirt.trim() !== "" && pants.trim() !== "";
+  const [gender, setGender] = useState<string | null>("");
+  const isButtonEnabled =
+    shirt.trim() !== "" && pants.trim() !== "" && gender?.trim() !== "";
   const handleUploadImage = async (
     base64Image: string,
     fileName: string
@@ -41,6 +44,7 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
         shirt: string;
         pants: string;
         accesories?: string;
+        gender: string | null;
       },
       string
     >(functions, "upload_image");
@@ -52,6 +56,7 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
         shirt,
         pants,
         accesories: accessories, // optional
+        gender: gender,
       });
 
       console.log("Image uploaded successfully:", response.data);
@@ -63,14 +68,28 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
   };
 
   // Function to convert a .png image file to a base64 string
-  const convertToBase64 = (file: Blob) => {
+  const convertToBase64 = (file: Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+
       reader.onloadend = () => {
-        resolve(reader.result);
+        if (typeof reader.result === "string") {
+          // Extract the base64 part (after the comma)
+          const base64WithPrefix = reader.result;
+          const base64Raw = base64WithPrefix.split(",")[1] ?? "";
+
+          // Fix padding
+          const padded =
+            base64Raw + "=".repeat((4 - (base64Raw.length % 4)) % 4);
+
+          resolve(padded);
+        } else {
+          reject(new Error("FileReader result is not a string."));
+        }
       };
+
       reader.onerror = reject;
-      reader.readAsDataURL(file); // Converts the file to base64
+      reader.readAsDataURL(file);
     });
   };
 
@@ -93,17 +112,14 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
 
     setCurrentContent("Processing Information");
     const b64Image = await convertToBase64(file);
+    console.log(b64Image);
     // Add null check
     if (!b64Image || typeof b64Image !== "string") {
       console.error("Failed to convert image to base64");
       return;
     }
-    console.log("USER:", auth.currentUser?.displayName);
     if (auth.currentUser) {
-      const imageString = await handleUploadImage(
-        b64Image as string,
-        file.name
-      );
+      const imageString = await handleUploadImage(b64Image, file.name);
       console.log(imageString, "success");
       setResult(imageString);
       setCurrentContent("Processing Complete");
@@ -111,18 +127,27 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
     } else {
       console.log("NO AUTHORIZED USER");
     }
+    setGender("");
+    setAccessories("");
+    setShirt("");
+    setPants("");
+    setFile(null);
   };
 
   return (
     <Modal
       centered
       opened={open}
-      onClose={() => setOpen(false)}
+      onClose={() => {
+        setOpen(false);
+        setCurrentContent("Additional Information");
+      }}
       title={currentContent}
       overlayProps={{
         backgroundOpacity: 0.55,
         blur: 3,
       }}
+      closeOnClickOutside={false}
       className={classes.container}
     >
       {currentContent === "Additional Information" && (
@@ -146,14 +171,16 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
           <Select
             mt="md"
             comboboxProps={{ withinPortal: true }}
-            data={["React", "Angular", "Svelte", "Vue"]}
+            data={["Male", "Female"]}
             placeholder="Pick one"
-            label="Your favorite library/framework"
+            label="Masculine or Feminine Avatar?"
             classNames={classes}
+            onChange={(value) => setGender(value)}
+            required={true}
           />
           <Center>
             <Button mt="md" disabled={!isButtonEnabled} onClick={handleSubmit}>
-              Click me
+              Submit
             </Button>
           </Center>
         </>
@@ -166,63 +193,47 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
       )}
       {currentContent === "Processing Complete" && result === "success" && (
         <Center style={{ flexDirection: "column", height: 100 }}>
-          <Text size="lg">Result: {result}</Text>
-          <Button
-            mt="md"
-            onClick={() => setCurrentContent("Additional Information")}
-          >
-            Reset
-          </Button>
+          <Text size="lg">
+            Due to limited resources, we process skins in batches, please keep
+            an eye on the email associated with your account and expect the skin
+            in the next 5 minutes. If you don't see the skin check junk mail or
+            reach out to cubemeteam@gmail.com
+          </Text>
         </Center>
       )}
-      {currentContent === "Processing Complete" && result === "success" && (
-        <Center style={{ flexDirection: "column", height: 100 }}>
-          <Text size="lg">SUCCESSFULLY SENT</Text>
-          <Button
-            mt="md"
-            onClick={() => setCurrentContent("Additional Information")}
-          >
-            Reset
-          </Button>
-        </Center>
-      )}
+      {currentContent === "Processing Complete" &&
+        result === "already processing" && (
+          <Center style={{ flexDirection: "column", height: 100 }}>
+            <Text size="md">
+              We are currently processing your request. If you do not receive
+              your skin via email in the next hour please reach out to
+              cubmeteam@gmail.com
+            </Text>
+          </Center>
+        )}
 
       {currentContent === "Processing Complete" && result === "token" && (
         <Center style={{ flexDirection: "column", height: 100 }}>
-          <Text size="lg">BUY MORE TOKENS POOR BOY</Text>
-          <Button
-            mt="md"
-            onClick={() => setCurrentContent("Additional Information")}
-          >
-            Reset
-          </Button>
+          <Text size="md">
+            You are out of image generation tokens, the ability to purchase more
+            tokens will be released next week
+          </Text>
         </Center>
       )}
       {currentContent === "Processing Complete" && result === "not found" && (
         <Center style={{ flexDirection: "column", height: 100 }}>
-          <Text size="lg">
+          <Text size="md">
             Account not set up properly, please contact cubemeteam@gmail.com
           </Text>
-          <Button
-            mt="md"
-            onClick={() => setCurrentContent("Additional Information")}
-          >
-            Reset
-          </Button>
         </Center>
       )}
       {currentContent === "Processing Complete" &&
         result === "unauthenticated" && (
           <Center style={{ flexDirection: "column", height: 100 }}>
-            <Text size="lg">
-              Account failed to authenticate. Please sign out and sign back in
+            <Text size="md">
+              Account failed to authenticate. Please sign out and sign back in.
+              If that does not fix the issue, contact cubemeteam@gmail.com
             </Text>
-            <Button
-              mt="md"
-              onClick={() => setCurrentContent("Additional Information")}
-            >
-              Reset
-            </Button>
           </Center>
         )}
     </Modal>
