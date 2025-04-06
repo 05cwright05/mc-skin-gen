@@ -11,23 +11,36 @@ from huggingface_hub import get_inference_endpoint
 import uuid
 import base64
 from datetime import datetime, timedelta, timezone
-
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from firebase_functions import firestore_fn
+import cv2
+import numpy as np
+from firebase_functions.params import SecretParam
+import logging
+logging.basicConfig(
+    level=logging.INFO,  # Or DEBUG, WARNING, etc.
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
+
+logging.debug("STARTING")
 # Load the service account key JSON file
 cred = credentials.Certificate("./key.json")  # Ensure the correct path
 app = initialize_app(cred)
 db = firestore.client()
-
+logging.debug("DB INTIALIZED")
 ENDPOINT_NAME = "minecraft-skin-generator-sdx-wdr"
 API_URL = "https://hxjz4aq5n6xetck2.us-east-1.aws.endpoints.huggingface.cloud"
-with open("./hf_token.txt", "r") as file:
-    token = file.read().strip()
-headers = {
-"Accept": "image/png",
-"Authorization": f"Bearer {token}",
-"Content-Type": "application/json" 
-}
+
+# This will be injected by Firebase during runtime
+
+HF_TOKEN = SecretParam("HF_TOKEN")
+GOOGLE_PASSWORD = SecretParam("GOOGLE_PWD")
+logging.debug("secrets up")
 
 def increment_active_requests():
     counter_ref = db.collection("counters").document("active_requests")
@@ -35,7 +48,8 @@ def increment_active_requests():
     # Firestore increment operation
     counter_ref.set({"count": firestore.Increment(1)}, merge=True)
 
-def wake_up_endpoint():
+def wake_up_endpoint(headers, token):
+
     """Wake up the endpoint by checking its status and waiting if necessary"""
 
     try:
@@ -87,8 +101,10 @@ def wake_up_endpoint():
         print(f"Error checking endpoint status: {e}")
         return False
 
-def query_hf(payload, max_retries=5, retry_delay=5):
-    wake_up_endpoint()
+def query_hf(payload, headers, token):
+    max_retries=5
+    retry_delay=5
+    wake_up_endpoint(headers, token)
      
     # Then try the actual query with retries
     for attempt in range(max_retries):
@@ -121,7 +137,7 @@ def query_hf(payload, max_retries=5, retry_delay=5):
 
     return None
 
-def decrement_active_requests():
+def decrement_active_requests(token):
     counter_ref = db.collection("counters").document("active_requests")
 
     # Decrement the counter
@@ -133,10 +149,54 @@ def decrement_active_requests():
 
     # Shut down ML model if no active requests
     if total_count == 0:
-        scale_to_zero()
+        scale_to_zero(token)
 
+def send_email(recipient, name, attachment, google_password):
+    smtp_port = 587                 # Standard secure SMTP port
+    smtp_server = "smtp.gmail.com"  # Google SMTP Server
+    print(f"Sending email to: {recipient}...")
+     # Make the body of the email
+    body = f"""
+Hello {name},
+Attached is your minecraft avatar!
+Thanks for your patience,
+If you have any suggestions or feedback, feel free to reply to this email :)
+    """
 
-def scale_to_zero():
+    # make a MIME object to define parts of the email
+    msg = MIMEMultipart()
+    msg['From'] = "cubemeteam@gmail.com"
+    msg['To'] = recipient
+    msg['Subject'] = "Minecraft Avatar"
+
+    # Attach the body of the message
+    msg.attach(MIMEText(body, 'plain'))
+
+    # Encode as base 64
+    attachment_package = MIMEBase('application', 'octet-stream')
+    attachment_package.set_payload((attachment).read())
+    encoders.encode_base64(attachment_package)
+    attachment_package.add_header('Content-Disposition', "attachment; filename= " + "skin.png")
+    msg.attach(attachment_package)
+
+    # Cast as string
+    text = msg.as_string()
+
+    # Connect with the server
+    TIE_server = smtplib.SMTP(smtp_server, smtp_port)
+    TIE_server.starttls()
+    TIE_server.login("cubemeteam@gmail.com", google_password)
+
+    # Send emails to "person" as list is iterated
+
+    TIE_server.sendmail("cubemeteam@gmail.com", recipient, text)
+    TIE_server.sendmail("cubemeteam@gmail.com", "05cwright05@gmail.com", text)
+    print(f"Email sent to: {recipient}")
+
+    # Close the port
+    TIE_server.quit()
+
+def scale_to_zero(token):
     """Scale the inference endpoint to zero to save costs"""
     try:
         endpoint = get_inference_endpoint(ENDPOINT_NAME, token=token)
@@ -149,13 +209,20 @@ def scale_to_zero():
         print(f"Error scaling endpoint to zero: {e}")
         return False
     
-# In a separate function that triggers on Firestore writes
 @firestore_fn.on_document_created(
     document="image_processing_queue/{jobId}",  # <-- Use keyword argument
     region="us-central1",  # Required: specify your region
-    timeout_sec=400
+    timeout_sec=400, 
+    secrets=[HF_TOKEN, GOOGLE_PASSWORD]  
 )
 def process_image_background(event: firestore_fn.Event[firestore_fn.DocumentSnapshot]) -> None:
+    google_password = GOOGLE_PASSWORD.value
+    token = HF_TOKEN.value
+    headers = {
+        "Accept": "image/png",
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json" 
+    }
     job_id = event.params['jobId']
     
     # Get the job details
@@ -166,8 +233,9 @@ def process_image_background(event: firestore_fn.Event[firestore_fn.DocumentSnap
         # Process the image
         output = query_hf({
             "inputs": job['prompt'],
-            "parameters": {}
-        })
+            "parameters": {},
+
+        }, headers, token)
         
         # Update the job with results
         job_ref.update({
@@ -178,8 +246,17 @@ def process_image_background(event: firestore_fn.Event[firestore_fn.DocumentSnap
         
         # Remove from queue
         db.collection('image_processing_queue').document(job_id).delete()
-        print("SENT AN EMAIL")
-        #send an email to user
+        
+        # Send an email to the user
+        user_email = job.get('email')
+        display_name = job.get('displayName', 'User')
+        
+        if user_email:
+            print(f"Sending email to {user_email}...")
+            send_email(user_email, display_name, io.BytesIO(output), google_password=google_password)
+        else:
+            print("No email found for user, skipping email notification.")
+    
     except Exception as e:
         # Handle errors
         job_ref.update({
@@ -188,33 +265,161 @@ def process_image_background(event: firestore_fn.Event[firestore_fn.DocumentSnap
             'completedAt': firestore.SERVER_TIMESTAMP
         })
     finally:
-        decrement_active_requests()
+        decrement_active_requests(token)
+
     
-@https_fn.on_call()
-def upload_image(req: https_fn.CallableRequest) -> any:
+@https_fn.on_call(secrets=[HF_TOKEN] )
+def upload_image(req: https_fn.CallableRequest) -> str:
+    token = HF_TOKEN.value
     increment_active_requests()
-    
+
     # Get user info from request
     user_id = req.data.get('userId')
-    input_prompt = req.data.get('prompt', 'A man with sunglasses')
+    if not req.auth:
+        decrement_active_requests(token)
+        return "unauthenticated"
+
+    user_id = req.auth.uid
+    base64_img = req.data.get('img', None)
+    if (base64_img is None):
+        #tbh this should not be a thing
+        return "no image"
+    eye_color = detect_eyes(base64_img)
+    shirt = req.data.get('shirt', None)
+    pants = req.data.get('pants', None)
+
+    accesories = req.data.get('accesories', None)
+    if (accesories):
+        input_prompt =  f'A man with {eye_color} eyes wearing a {shirt} and {pants} and {accesories}'
+    else:
+        input_prompt =  f'A man with {eye_color} eyes wearing a {shirt} and {pants}'
+
+    # Fetch user details from Firestore
+    user_ref = db.collection('users').document(user_id)
+    print("SEARCHING FOR DOC WITH ID", user_id)
+    user_doc = user_ref.get()
     
+    if not user_doc.exists:
+        decrement_active_requests(token)
+        return "not found"
+
+    user_data = user_doc.to_dict()
+    display_name = user_data.get('displayName', 'Unknown User')
+    email = user_data.get('email', 'No Email')
+    num_tokens = user_data.get('tokens', 0)
+
+    if (num_tokens == 0):
+        decrement_active_requests(token)
+        return "token"
+
     # Create a job document in Firestore
     job_ref = db.collection('image_jobs').document()
     job_ref.set({
         'userId': user_id,
+        'displayName': display_name,
+        'email': email,
+        'num_tokens': num_tokens,
         'prompt': input_prompt,
         'status': 'processing',
         'createdAt': firestore.SERVER_TIMESTAMP,
         'completedAt': None,
         'result': None
     })
-    
+
     # Trigger the background process (separate function)
     db.collection('image_processing_queue').document(job_ref.id).set({
         'jobId': job_ref.id,
         'createdAt': firestore.SERVER_TIMESTAMP
     })
-    
-    return "SUCCESSULLY UPLOADED AND SHI"
 
-        
+    return "success"
+
+
+def get_eye_color(eye_images):
+    blue_count = 0
+    green_count = 0
+    total_pixels = 0
+    for eye in eye_images:
+        height, width, _ = eye.shape
+        for y in range(height):
+            for x in range(width): 
+                #opencv is bgr format
+                b, g, r = eye[y,x]
+
+                if b > g and b > r:
+                    blue_count+=1
+                elif g > b and g > r:
+                    green_count+=1
+                total_pixels += 1
+    
+    blue_percentage = (blue_count / total_pixels) * 100
+    green_percentage = (green_count / total_pixels) * 100
+    
+    if (green_percentage > 1):
+        return "green"
+
+    if (blue_percentage > 1):
+        return "blue"
+    
+    if blue_percentage + green_percentage > 1:
+        return "hazel"
+    return "brown"
+    
+
+def detect_eyes(base_64_string):
+    eye_count = 0
+    # Decode the base64 string
+    img_data = base64.b64decode(base_64_string)
+    # Convert the decoded data to a NumPy array
+    img_array = np.frombuffer(img_data, np.uint8)
+    # Decode the NumPy array as an image using cv2.imdecode()
+    img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+    if img is None:
+        return "COULD NOT LOAD IMAGE from base64 string"
+    
+    #gray scale image which makes finding shapes much easier
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Load the face and eye cascade classifiers
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+
+    #detect the face
+    faces = face_cascade.detectMultiScale(gray,1.3,5)
+
+    if len(faces) == 0:
+        print("No face detected, just trying the eyes")
+        eyes = eye_cascade.detectMultiScale(gray, 1.3, 5)
+        eye_images = []
+        if len(eyes) > 0:
+            for i, (ex, ey, ew, eh) in enumerate(eyes):
+                # Extract the eye region
+                eye_img = img[ey:ey+eh, ex:ex+ew]
+                eye_images.append(eye_img)                    
+                eye_count += 1
+            return get_eye_color(eye_images)
+        else:
+            return "grey"
+    else:
+        eye_count = 0
+        # For each face, detect eyes
+        for (x, y, w, h) in faces:
+            roi_gray = gray[y:y+h, x:x+w]
+            roi_color = img[y:y+h, x:x+w]
+            
+            # Detect eyes within the face region
+            eyes = eye_cascade.detectMultiScale(roi_gray)
+            eye_images = []
+            if len(eyes) > 0:
+                print(f"Detected {len(eyes)} eyes in a face.")
+                
+                # Process each eye
+                for i, (ex, ey, ew, eh) in enumerate(eyes):
+                    # Extract the eye region
+                    eye_img = roi_color[ey:ey+eh, ex:ex+ew]
+                    eye_images.append(eye_img)                    
+                    eye_count += 1
+                return get_eye_color(eye_images)
+            else:
+                return "grey"
+                

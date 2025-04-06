@@ -1,15 +1,6 @@
-Plan:
-
-Process image on client side:
-hope to extract eye color, skin color, hair color, etc.
-
--Scrape a mc skins website for training data
-
--Train a stable diffusion model on Huggingface or something similar (I think there is a pay per use options which if i dont have tons of users is probably the way to go)
-
-- Send the extracted data + anything users add (like what type of shirt etc.) as a paragraph to huggingface model and wait for resposne
-
--Current most pressing:
-Make a model that isnt horrible
-
-- Eventually make sure everything is secure (i.e only authenticated users can call hugging face. Maybe will need to add something to firebase to do this)
+To do:
+Clear the files after a user submits && clear all additional data
+Reduce their tokens by 1 once called.
+If user does not have enough tokens dont call it, and return that and show appropriate UI
+Add a system to purchase more tokens using Stripe
+Fix the decrementing of counter once the operation is complete s.t. the server actually shuts down when it should

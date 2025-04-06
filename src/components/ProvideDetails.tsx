@@ -1,4 +1,12 @@
-import { Modal, Button, Group, Text, Center, Loader } from "@mantine/core";
+import {
+  Modal,
+  Button,
+  Group,
+  Text,
+  Center,
+  Loader,
+  Select,
+} from "@mantine/core";
 import classes from "./ProvideDetails.module.css";
 import { FloatingLabelInput } from "./FloatingLabelInput";
 import { useState } from "react";
@@ -26,20 +34,28 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
     base64Image: string,
     fileName: string
   ): Promise<string> => {
-    const uploadImageFunction = httpsCallable<{
-      base64String: string;
-      fileName: string;
-    }>(functions, "upload_image");
+    const uploadImageFunction = httpsCallable<
+      {
+        img: string;
+        fileName: string;
+        shirt: string;
+        pants: string;
+        accesories?: string;
+      },
+      string
+    >(functions, "upload_image");
 
     try {
       const response = await uploadImageFunction({
-        base64String: base64Image,
+        img: base64Image,
         fileName: fileName,
+        shirt,
+        pants,
+        accesories: accessories, // optional
       });
-      console.log("Image uploaded successfully:", response.data);
 
-      // Assuming response.data contains a string you want to return
-      return response.data as string;
+      console.log("Image uploaded successfully:", response.data);
+      return response.data;
     } catch (error) {
       console.error("Error uploading image:", error);
       throw error;
@@ -127,6 +143,14 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
             setItem={setAccessories}
             required={false}
           />
+          <Select
+            mt="md"
+            comboboxProps={{ withinPortal: true }}
+            data={["React", "Angular", "Svelte", "Vue"]}
+            placeholder="Pick one"
+            label="Your favorite library/framework"
+            classNames={classes}
+          />
           <Center>
             <Button mt="md" disabled={!isButtonEnabled} onClick={handleSubmit}>
               Click me
@@ -140,8 +164,7 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
           <Loader size="lg" />
         </Center>
       )}
-
-      {currentContent === "Processing Complete" && (
+      {currentContent === "Processing Complete" && result === "success" && (
         <Center style={{ flexDirection: "column", height: 100 }}>
           <Text size="lg">Result: {result}</Text>
           <Button
@@ -152,6 +175,56 @@ export function ProvideDetails({ open, setOpen, file }: Props) {
           </Button>
         </Center>
       )}
+      {currentContent === "Processing Complete" && result === "success" && (
+        <Center style={{ flexDirection: "column", height: 100 }}>
+          <Text size="lg">SUCCESSFULLY SENT</Text>
+          <Button
+            mt="md"
+            onClick={() => setCurrentContent("Additional Information")}
+          >
+            Reset
+          </Button>
+        </Center>
+      )}
+
+      {currentContent === "Processing Complete" && result === "token" && (
+        <Center style={{ flexDirection: "column", height: 100 }}>
+          <Text size="lg">BUY MORE TOKENS POOR BOY</Text>
+          <Button
+            mt="md"
+            onClick={() => setCurrentContent("Additional Information")}
+          >
+            Reset
+          </Button>
+        </Center>
+      )}
+      {currentContent === "Processing Complete" && result === "not found" && (
+        <Center style={{ flexDirection: "column", height: 100 }}>
+          <Text size="lg">
+            Account not set up properly, please contact cubemeteam@gmail.com
+          </Text>
+          <Button
+            mt="md"
+            onClick={() => setCurrentContent("Additional Information")}
+          >
+            Reset
+          </Button>
+        </Center>
+      )}
+      {currentContent === "Processing Complete" &&
+        result === "unauthenticated" && (
+          <Center style={{ flexDirection: "column", height: 100 }}>
+            <Text size="lg">
+              Account failed to authenticate. Please sign out and sign back in
+            </Text>
+            <Button
+              mt="md"
+              onClick={() => setCurrentContent("Additional Information")}
+            >
+              Reset
+            </Button>
+          </Center>
+        )}
     </Modal>
   );
 }
