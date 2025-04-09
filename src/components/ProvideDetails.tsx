@@ -185,7 +185,7 @@ export function ProvideDetails({ open, setOpen, file, setFile }: Props) {
       )}
       {currentContent === "Processing Complete" && result === "success" && (
         <Center style={{ flexDirection: "column", height: 100 }}>
-          <Text size="lg">
+          <Text size="md">
             Due to limited resources, we process skins in batches, please keep
             an eye on the email associated with your account and expect the skin
             in the next 5 minutes. If you don't see the skin check junk mail or

@@ -22,7 +22,6 @@
         "*.local"
       ],
       "runtime": "python311"
-
     }
   ],
   "emulators": {
@@ -39,5 +38,19 @@
     "auth": {
       "port": 9099
     }
+  },
+  "hosting": {
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   }
 }

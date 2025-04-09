@@ -216,6 +216,7 @@ def scale_to_zero(token):
     secrets=[HF_TOKEN, GOOGLE_PASSWORD]  
 )
 def process_image_background(event: firestore_fn.Event[firestore_fn.DocumentSnapshot]) -> None:
+    logging.debug("NEW DOCUMENT RUNNING PROCESS_IMAGE_BG")
     google_password = GOOGLE_PASSWORD.value
     token = HF_TOKEN.value
     headers = {
