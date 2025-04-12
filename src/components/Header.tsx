@@ -8,7 +8,7 @@ import { ProfileButton } from "./ProfileButton";
 const links = [
   { link: "about", label: "About" },
   { link: "create", label: "Create" },
-  { link: "pricing", label: "Pricing" },
+  //{ link: "pricing", label: "Pricing" },
 ];
 
 interface Props {

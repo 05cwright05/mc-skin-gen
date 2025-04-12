@@ -17,7 +17,7 @@ export function Footer() {
           justify="flex-end"
           wrap="nowrap"
         >
-          <ActionIcon size="lg" color="gray" variant="subtle">
+          {/* <ActionIcon size="lg" color="gray" variant="subtle">
             <IconBrandTwitter size={18} stroke={1.5} />
           </ActionIcon>
           <ActionIcon size="lg" color="gray" variant="subtle">
@@ -25,7 +25,7 @@ export function Footer() {
           </ActionIcon>
           <ActionIcon size="lg" color="gray" variant="subtle">
             <IconBrandInstagram size={18} stroke={1.5} />
-          </ActionIcon>
+          </ActionIcon> */}
         </Group>
       </Container>
     </div>
